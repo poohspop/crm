@@ -48,8 +48,10 @@ const workspace = (data: {
 	slug?: string;
 }) => ({ result: { data: { slug: SLUG, ...data } } });
 
-const researchKey = (configured: boolean) => ({
-	result: { data: { configured, hint: configured ? "••••9876" : null } },
+const researchKey = (configured: boolean, canManage = true) => ({
+	result: {
+		data: { configured, canManage, hint: configured ? "••••9876" : null },
+	},
 });
 
 /** Answers both gate procedures, counting the calls to each. */
@@ -132,6 +134,12 @@ describe("readWorkspaceGate", () => {
 });
 
 describe("readResearchGate", () => {
+	it("does not require members to configure a workspace key", async () => {
+		answerWith(researchKey(false, false));
+		expect(await readResearchGate(request("/", [SESSION_COOKIE]))).toBe(
+			"settled",
+		);
+	});
 	it("is settled once a key is saved, and required until then", async () => {
 		answerWith(researchKey(true));
 		expect(await readResearchGate(request("/", [SESSION_COOKIE]))).toBe(

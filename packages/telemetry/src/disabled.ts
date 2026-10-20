@@ -7,7 +7,10 @@ export function telemetryDisabled(
 ): boolean {
 	if (env.NODE_ENV === "test") return true;
 
-	return DISABLE_VARIABLES.some((name) => isTruthy(env[name]));
+	return (
+		!isTruthy(env.CRM_TELEMETRY_ENABLED) ||
+		DISABLE_VARIABLES.some((name) => isTruthy(env[name]))
+	);
 }
 
 function isTruthy(value: string | undefined): boolean {

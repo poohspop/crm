@@ -1,5 +1,6 @@
 import { ActivityType, db, EmailDirection } from "@crm/db";
 import { z } from "zod";
+import { agentEmailAllowed } from "./email-privacy";
 import { isDerivedName } from "./names";
 
 const BODY_LIMIT = 4000;
@@ -64,6 +65,7 @@ export type CompanyDeal = {
 };
 
 export type CompanyHistory = {
+	emailAccess: "disabled" | "full";
 	company: {
 		id: string;
 		name: string;
@@ -120,7 +122,7 @@ export async function readCompanyHistory(
 	});
 
 	if (!company) return null;
-	const includeEmail = options.includeEmail ?? true;
+	const includeEmail = agentEmailAllowed() && (options.includeEmail ?? true);
 	const includeCalendar = options.includeCalendar ?? true;
 
 	const belongsToCompany = { OR: [{ companyId }, { contact: { companyId } }] };
@@ -247,6 +249,7 @@ export async function readCompanyHistory(
 	const now = new Date();
 
 	return {
+		emailAccess: includeEmail ? "full" : "disabled",
 		company: {
 			id: company.id,
 			name: company.name,
@@ -299,6 +302,7 @@ export async function readCompanyHistory(
 }
 
 export type DealHistory = {
+	emailAccess: "disabled" | "full";
 	deal: {
 		id: string;
 		name: string;
@@ -381,7 +385,7 @@ export async function readDealHistory(
 	});
 
 	if (!deal) return null;
-	const includeEmail = options.includeEmail ?? true;
+	const includeEmail = agentEmailAllowed() && (options.includeEmail ?? true);
 	const includeCalendar = options.includeCalendar ?? true;
 
 	const contactIds = deal.contacts.map(({ contact }) => contact.id);
@@ -470,6 +474,7 @@ export async function readDealHistory(
 	const now = new Date();
 
 	return {
+		emailAccess: includeEmail ? "full" : "disabled",
 		deal: {
 			id: deal.id,
 			name: deal.name,

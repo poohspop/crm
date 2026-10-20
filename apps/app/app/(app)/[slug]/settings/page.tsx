@@ -1,3 +1,4 @@
+import { canManageSettings, workspaceRoleOf } from "@crm/auth";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import {
@@ -43,7 +44,8 @@ export default function GeneralSettingsPage() {
 }
 
 async function Settings() {
-	await requireSession();
+	const session = await requireSession();
+	const canManage = canManageSettings(await workspaceRoleOf(session.user.id));
 
 	const trpc = getServerTrpc();
 	const queryClient = getServerQueryClient();
@@ -60,9 +62,18 @@ async function Settings() {
 		<HydrateClient>
 			<div className="flex max-w-3xl flex-col gap-6">
 				<WorkspaceForm />
-				<ResearchKey />
-				<ArchiveRetention />
-				<AgentModel />
+				{canManage ? (
+					<>
+						<ResearchKey />
+						<ArchiveRetention />
+						<AgentModel />
+					</>
+				) : (
+					<p>
+						Only an owner or admin can change the research key, archive
+						retention, and AI model.
+					</p>
+				)}
 			</div>
 		</HydrateClient>
 	);

@@ -15,6 +15,7 @@ const real = {
 	fetch: globalThis.fetch,
 	nodeEnv: process.env.NODE_ENV,
 	disabled: process.env.CRM_TELEMETRY_DISABLED,
+	enabled: process.env.CRM_TELEMETRY_ENABLED,
 	doNotTrack: process.env.DO_NOT_TRACK,
 };
 
@@ -58,6 +59,7 @@ beforeEach(() => {
 	forgetInstall();
 
 	process.env.NODE_ENV = "development";
+	process.env.CRM_TELEMETRY_ENABLED = "1";
 	delete process.env.CRM_TELEMETRY_DISABLED;
 	delete process.env.DO_NOT_TRACK;
 });
@@ -68,6 +70,7 @@ afterEach(() => {
 	forgetInstall();
 
 	restore("NODE_ENV", real.nodeEnv);
+	restore("CRM_TELEMETRY_ENABLED", real.enabled);
 	restore("CRM_TELEMETRY_DISABLED", real.disabled);
 	restore("DO_NOT_TRACK", real.doNotTrack);
 });
@@ -126,6 +129,15 @@ describe("capture", () => {
 		expect(await captureNow("install_daily", { crm_version: "1.0.0" })).toBe(
 			true,
 		);
+	});
+
+	it("makes no network call without explicit telemetry consent", async () => {
+		delete process.env.CRM_TELEMETRY_ENABLED;
+		resetTelemetryClient();
+		expect(await captureNow("install_daily", { crm_version: "1.0.0" })).toBe(
+			false,
+		);
+		expect(calls.length).toBe(0);
 	});
 
 	it("makes no network call at all when CRM_TELEMETRY_DISABLED is set", async () => {
