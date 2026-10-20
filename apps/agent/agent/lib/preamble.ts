@@ -1,6 +1,7 @@
 import { db } from "@crm/db";
 import { websiteUrl } from "@crm/db/workspace";
 import { capabilitiesMarkdown } from "./capabilities";
+import { agentEmailAllowed } from "./email-privacy";
 import { identity, usMarkdown, type WorkspaceIdentity } from "./workspace";
 
 export type Opened = {
@@ -95,7 +96,9 @@ export async function contactPreamble(
 					deal: { select: { id: true, name: true, stage: true } },
 				},
 			},
-			_count: { select: { emailThreads: true, calendarEvents: true } },
+			_count: {
+				select: { emailThreads: agentEmailAllowed(), calendarEvents: true },
+			},
 		},
 	});
 
@@ -105,9 +108,11 @@ export async function contactPreamble(
 
 	const name = [contact.firstName, contact.lastName].filter(Boolean).join(" ");
 
-	const known =
-		contact._count.emailThreads > 0 || contact._count.calendarEvents > 0
-			? `We have ${contact._count.emailThreads} thread(s) and ${contact._count.calendarEvents} meeting(s) with them — read those first.`
+	const known = !agentEmailAllowed()
+		? "Email access is disabled by the operator. Do not infer that no correspondence exists."
+		: (contact._count.emailThreads ?? 0) > 0 ||
+				contact._count.calendarEvents > 0
+			? `We have ${contact._count.emailThreads ?? 0} thread(s) and ${contact._count.calendarEvents} meeting(s) with them — read those first.`
 			: "We have never corresponded with them, so there is nothing internal to go on.";
 
 	const deals = contact.deals

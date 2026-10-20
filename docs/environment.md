@@ -182,7 +182,10 @@ feature is only ever wrong), **no `GOOGLE_WORKSPACE_DOMAIN`** (`ALLOWED_SIGN_IN`
 says who is internal — two sources is how a colleague becomes a lead), **no
 `GMAIL_BACKFILL_DAYS`**, **no `OUTLOOK_BACKFILL_DAYS`**, **no rate provider variable**.
 
-## Telemetry is on, and turning it off is one variable
+## Telemetry requires explicit consent
+
+Telemetry is disabled by default. Set `CRM_TELEMETRY_ENABLED="1"` to enable server telemetry.
+Disable variables override consent. See `docs/ai-privacy.md` for the separate AI email control.
 
 `CRM_TELEMETRY_DISABLED="1"` — or `DO_NOT_TRACK=1`, honoured identically — and nothing
 is sent. No client is constructed, so there is no queue waiting to flush later.

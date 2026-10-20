@@ -3,6 +3,8 @@
 What this install reports about itself, in full. The decisions behind it are in
 `adrs/telemetry.md`; this file is the list.
 
+**Telemetry is disabled by default.** Set `CRM_TELEMETRY_ENABLED="1"` to consent to server telemetry.
+
 **Turn it off** with `CRM_TELEMETRY_DISABLED="1"` or `DO_NOT_TRACK=1` in the root `.env`, then
 restart. This file is the full account of what is sent; there is no settings page for it, so
 this is the thing to read.

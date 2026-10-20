@@ -1,4 +1,5 @@
 import { db, EnrichmentStatus, type Prisma } from "@crm/db";
+import { agentEmailAllowed } from "./email-privacy";
 import { domainOf, isDerivedName } from "./names";
 import type { Person } from "./socials";
 
@@ -107,6 +108,7 @@ export function linkedinSlug(url: string | null): string | null {
 }
 
 export type CrmHistory = {
+	emailAccess: "disabled" | "full";
 	contact: {
 		fullName: string;
 		email: string | null;
@@ -197,7 +199,7 @@ export async function readCrmHistory(
 	});
 
 	if (!contact) return null;
-	const includeEmail = options.includeEmail ?? true;
+	const includeEmail = agentEmailAllowed() && (options.includeEmail ?? true);
 	const includeCalendar = options.includeCalendar ?? true;
 
 	const [threads, meetings, colleagues] = await Promise.all([
@@ -267,6 +269,7 @@ export async function readCrmHistory(
 		.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
 
 	return {
+		emailAccess: includeEmail ? "full" : "disabled",
 		contact: {
 			fullName: [contact.firstName, contact.lastName].filter(Boolean).join(" "),
 			email: contact.email,

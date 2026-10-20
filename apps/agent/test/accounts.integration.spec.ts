@@ -1,6 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { ActivityType, DealStage, db, EmailDirection } from "@crm/db";
 import { readCompanyHistory, readDealHistory } from "../agent/lib/accounts";
+import { readCrmHistory } from "../agent/lib/crm";
+
+const originalEmailAccess = process.env.CRM_AGENT_EMAIL_ACCESS;
 
 const suffix = process.env.TEST_RUN_ID ?? "accounts-spec";
 const domain = `fernhill-${suffix}.test`;
@@ -15,6 +18,7 @@ const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000);
 const daysAhead = (days: number) => new Date(Date.now() + days * 86_400_000);
 
 beforeAll(async () => {
+	process.env.CRM_AGENT_EMAIL_ACCESS = "full";
 	await cleanup();
 
 	const user = await db.user.create({
@@ -197,6 +201,37 @@ async function cleanup(): Promise<void> {
 
 	await db.user.deleteMany({ where: { email: `rep.${suffix}@example.test` } });
 }
+
+afterAll(() => {
+	if (originalEmailAccess === undefined)
+		delete process.env.CRM_AGENT_EMAIL_ACCESS;
+	else process.env.CRM_AGENT_EMAIL_ACCESS = originalEmailAccess;
+});
+
+describe("agent email enforcement", () => {
+	it("blocks all readers even when callers explicitly request email", async () => {
+		delete process.env.CRM_AGENT_EMAIL_ACCESS;
+		try {
+			const contact = await readCrmHistory(paulaId, { includeEmail: true });
+			const company = await readCompanyHistory(companyId, {
+				includeEmail: true,
+			});
+			const deal = await readDealHistory(dealId, { includeEmail: true });
+			for (const result of [contact, company, deal]) {
+				expect(result?.emailAccess).toBe("disabled");
+				expect(result?.threads).toEqual([]);
+				expect(result?.stats.theyReplied).toBe(false);
+				expect(result?.stats.lastReplyAt).toBeNull();
+			}
+			expect(company?.stats.emails).toBe(0);
+			expect(company?.people.every((person) => person.threads === 0)).toBe(
+				true,
+			);
+		} finally {
+			process.env.CRM_AGENT_EMAIL_ACCESS = "full";
+		}
+	});
+});
 
 describe("readCompanyHistory", () => {
 	it("names every contact at the company, with their id", async () => {
